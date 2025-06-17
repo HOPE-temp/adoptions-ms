@@ -5,6 +5,7 @@ import { environments } from './config/environments';
 import { validationSchema } from './config/validationEnv';
 import configEnv from './config/config';
 import { DatabaseModule } from './database/database.module';
+import { AdoptionsModule } from './adoptions/adoptions.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { DatabaseModule } from './database/database.module';
       validationSchema,
       isGlobal: true,
     }),
+    AdoptionsModule,
     DatabaseModule,
   ],
 })
