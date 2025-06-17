@@ -27,6 +27,10 @@
 
 ## Project setup
 
+Install [docker y docker compose](https://docs.docker.com/compose/install/)
+
+Clone [db-core](https://github.com/HOPE-temp/db-core)
+
 ```bash
 $ npm install
 ```
