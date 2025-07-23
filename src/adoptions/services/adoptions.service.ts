@@ -1,22 +1,18 @@
+import 'reflect-metadata';
+
 import { FindManyOptions, FindOptionsWhere, In, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 
-import { AdoptersService } from 'src/adopters/services/adopters.service';
-import {
-  CreateAdoptionDto,
-  CreateWithReviewAdoptionDto,
-} from '../dto/create-adoption.dto';
+import { CreateAdoptionDto } from '../dto/create-adoption.dto';
 import { Adoption } from '../entities/adoption.entity';
-import { Animal } from 'src/animals/entities/animal.entity';
 import {
-  StatusRequestApotion,
-  StatusResultApotion,
+  StatusRequestAdoption,
+  StatusResultAdoption,
 } from '../models/adoption.status.model';
 import { validateStatusFlow } from 'src/common/utils/statusFlow.util';
 import {
@@ -24,105 +20,76 @@ import {
   adoptionStatusResultFlow,
 } from '../flows/adoptions.flow';
 import { FilterAdoptionDto } from '../dto/filter-adoption.dto';
-import { UsersService } from 'src/users/services/users.service';
-import { limitTimeForNextAccion } from 'src/common/utils/nextAccion.util';
 import {
   UpdateAdoptionDto,
   UpdateAdoptionEvaluateDto,
+  UpdateAdoptionRequestDto,
+  UpdateAdoptionResultDto,
   UpdateCompleteRequestAdoption,
   UpdateLinkAnimalWithAdoption,
+  UpdateLinkSupervisor,
+  UpdateTemporalAdoptionrDto,
 } from '../dto/update-adoption.dto';
+import { AdoptedAnimal } from '../entities/adoptedAnimal.entity';
+import { SelectedAnimalTemp } from '../entities/selectedAnimalTemp.entity';
 
 @Injectable()
 export class AdoptionsService {
   constructor(
     @InjectRepository(Adoption) private adoptionRepo: Repository<Adoption>,
-    @InjectRepository(Animal) private animalRepo: Repository<Animal>,
-    private userService: UsersService,
-    private adoptersService: AdoptersService,
+    @InjectRepository(AdoptedAnimal)
+    private adoptedAnimalRepo: Repository<AdoptedAnimal>,
+    @InjectRepository(SelectedAnimalTemp)
+    private selectedAnimalTempRepo: Repository<SelectedAnimalTemp>,
   ) {}
 
-  async create(createAdoptionDto: CreateAdoptionDto) {
-    const { adopterId } = createAdoptionDto;
+  async create({ adopter }: CreateAdoptionDto) {
+    const fooAdoption: Adoption = this.adoptionRepo.create({ adopter });
 
-    const lastAdoption = await this.adoptionRepo.findOne({
-      where: { adopter: { id: createAdoptionDto.adopterId } },
-      order: { createdAt: { direction: 'DESC' } },
-    });
-
-    if (lastAdoption?.createdAt) {
-      limitTimeForNextAccion(new Date(lastAdoption.createdAt), {
-        typeTime: 'day',
-      });
-    }
-    //validation adopterId is exist
-    const adopter = await this.adoptersService.findOne(adopterId);
-
-    if (!adopter.evaluations) {
-      throw new BadRequestException('Adopter not have evaluations');
-    }
-
-    const adoption: Adoption = this.adoptionRepo.create({ adopter: adopter });
-
-    if (createAdoptionDto.animalsIds) {
-      const animalsTemp = await this.animalRepo.findBy({
-        id: In(createAdoptionDto.animalsIds),
-      });
-      adoption.animalsTemp = animalsTemp;
-    }
-    return this.adoptionRepo.save(adoption);
+    return await this.adoptionRepo.save(fooAdoption);
   }
 
-  async createWithResult(
-    evaluatorId: number,
-    createAdoptionDto: CreateWithReviewAdoptionDto,
-  ) {
-    const { adopterId } = createAdoptionDto;
-
-    const evaluator = await this.userService.findOne(evaluatorId);
-    const adopter = await this.adoptersService.findOne(adopterId);
-
-    const statusRequest = this.validatedRequestForResult(
-      createAdoptionDto.statusResult,
-    );
-
-    const adoption = this.adoptionRepo.create({
-      ...createAdoptionDto,
-      reviewRequestAt: new Date(),
-      statusRequest,
-      adopter,
-      evaluator,
+  async registerAnimalSelected(adoption: Adoption, animalId: number) {
+    const adopterAnimal = await this.adoptedAnimalRepo.findOne({
+      where: { animal: animalId },
     });
-
-    if (createAdoptionDto.animalsIds) {
-      const animalsTemp = await this.animalRepo.findBy({
-        id: In(createAdoptionDto.animalsIds),
-      });
-      adoption.animalsTemp = animalsTemp;
+    if (adopterAnimal && !adopterAnimal.isReturned) {
+      throw new ConflictException('No disponible');
     }
-
-    return this.adoptionRepo.save(adoption);
+    const selected = this.selectedAnimalTempRepo.create({
+      adoption,
+      animal: animalId,
+    });
+    this.selectedAnimalTempRepo.save(selected);
   }
 
-  findAll(params?: FilterAdoptionDto) {
+  async registerAnimalAdopted(adoption: Adoption, animalId: number) {
+    const adopterAnimal = await this.adoptedAnimalRepo.findOne({
+      where: { animal: animalId },
+    });
+    if (adopterAnimal && !adopterAnimal.isReturned) {
+      throw new ConflictException('No disponible');
+    }
+    const selected = this.adoptedAnimalRepo.create({
+      adoption,
+      animal: animalId,
+    });
+    this.adoptedAnimalRepo.save(selected);
+  }
+
+  async findAll(params?: FilterAdoptionDto) {
     const options: FindManyOptions<Adoption> = {
-      loadRelationIds: true,
-      relations: [],
       take: 10,
       skip: 0,
     };
 
     if (params) {
       const where: FindOptionsWhere<Adoption> = {};
-      const { idAdopter, documentNumber, statusRequest, statusResult } = params;
+      const { idAdopter, statusRequest, statusResult } = params;
       const { limit, offset } = params;
 
       if (idAdopter) {
-        where.adopter = { id: idAdopter };
-      }
-
-      if (documentNumber) {
-        where.adopter = { documentNumber };
+        where.adopter = idAdopter;
       }
 
       if (statusRequest) {
@@ -138,13 +105,20 @@ export class AdoptionsService {
       options.where = where;
     }
 
-    return this.adoptionRepo.find(options);
+    const [items, total] = await this.adoptionRepo.findAndCount(options);
+
+    return {
+      items,
+      total,
+      limit: options.take,
+      offset: options.skip,
+    };
   }
 
   async findOne(id: string) {
     const adopter = await this.adoptionRepo.findOne({
       where: { id },
-      relations: ['adopter', 'animalsTemp'],
+      relations: ['animalsTemp', 'adoptedAnimals'],
     });
     if (!adopter) {
       throw new NotFoundException(`Adoption #${id} not found`);
@@ -152,22 +126,20 @@ export class AdoptionsService {
     return adopter;
   }
 
-  async update(adoptionId: string, updateAdoptionDto: UpdateAdoptionDto) {
-    const adoption = await this.findOne(adoptionId);
-    this.adoptionRepo.merge(adoption, {
-      ...updateAdoptionDto,
-      reviewRequestAt: new Date(),
-    });
+  async findConsultStatusAdoption(id: string) {
+    const adopter = await this.findOne(id);
 
-    return this.adoptionRepo.save(adoption);
+    return {
+      adoptionId: adopter.id,
+      statusRequest: adopter.statusRequest,
+    };
   }
 
   async evaluateRequestAdoption(
     id: string,
-    evaluatorId: number,
+    evaluator: number,
     updateAdoptionDto: UpdateAdoptionEvaluateDto,
   ) {
-    const evaluator = await this.userService.findOne(evaluatorId);
     const adoption = await this.findOne(id);
     const { reviewRequestNotes, statusResult } = updateAdoptionDto;
 
@@ -184,17 +156,19 @@ export class AdoptionsService {
     return this.adoptionRepo.save(adoption);
   }
 
-  async linkAnimalWithAdoption(
-    id: string,
-    updateAdoptionDto: UpdateLinkAnimalWithAdoption,
-  ) {
+  async linkAnimalWithAdoption(id: string, animalId: number) {
     const adoption = await this.findOne(id);
 
-    this.updateStatusRequest(adoption, StatusRequestApotion.SELECTED_ANIMAL);
+    return this.registerAnimalAdopted(adoption, animalId);
+  }
 
+  async linkVolunteerSupervisor(
+    id: string,
+    updateAdoptionDto: UpdateLinkSupervisor,
+  ) {
+    const adoption = await this.findOne(id);
     this.adoptionRepo.merge(adoption, {
-      ...updateAdoptionDto,
-      selectedAnimalAt: new Date(),
+      evaluator: updateAdoptionDto.userId,
     });
 
     return this.adoptionRepo.save(adoption);
@@ -206,18 +180,51 @@ export class AdoptionsService {
   ) {
     const adoption = await this.findOne(id);
 
-    this.updateStatusRequest(adoption, StatusRequestApotion.ADOPTION_COMPLETED);
+    this.updateStatusRequest(
+      adoption,
+      StatusRequestAdoption.ADOPTION_COMPLETED,
+    );
 
     this.adoptionRepo.merge(adoption, updateAdoptionDto);
 
     return this.adoptionRepo.save(adoption);
   }
 
+  async updateResultAdoption(
+    id: string,
+    updateAdoptionDto: UpdateAdoptionResultDto,
+  ) {
+    const adoption = await this.findOne(id);
+
+    this.updateStatusResult(adoption, updateAdoptionDto.statusResult);
+
+    this.adoptionRepo.merge(adoption, updateAdoptionDto);
+
+    return this.adoptionRepo.save(adoption);
+  }
+
+  async updateRequestAdoption(
+    id: string,
+    updateAdoptionDto: UpdateAdoptionRequestDto,
+  ) {
+    const adoption = await this.findOne(id);
+
+    this.updateStatusRequest(adoption, updateAdoptionDto.statusRequest);
+
+    return this.adoptionRepo.save(adoption);
+  }
+
+  async updateTeporal(id: string, animalId: number) {
+    const adoption = await this.findOne(id);
+
+    return this.registerAnimalSelected(adoption, animalId);
+  }
+
   //utils
 
   private updateStatusRequest(
     adoption: Adoption,
-    statusRequest: StatusRequestApotion,
+    statusRequest: StatusRequestAdoption,
   ) {
     if (
       !validateStatusFlow(
@@ -236,7 +243,7 @@ export class AdoptionsService {
   }
   private updateStatusResult(
     adoption: Adoption,
-    statusResult: StatusResultApotion,
+    statusResult: StatusResultAdoption,
   ) {
     if (
       !validateStatusFlow(
@@ -255,12 +262,12 @@ export class AdoptionsService {
   }
 
   validatedRequestForResult(
-    statusResult: StatusResultApotion,
-  ): StatusRequestApotion {
-    let statusRequest = StatusRequestApotion.CANCELLED;
+    statusResult: StatusResultAdoption,
+  ): StatusRequestAdoption {
+    let statusRequest = StatusRequestAdoption.CANCELLED;
 
-    if (statusResult === StatusResultApotion.APPROVED) {
-      statusRequest = StatusRequestApotion.SUITABLE;
+    if (statusResult === StatusResultAdoption.APPROVED) {
+      statusRequest = StatusRequestAdoption.SUITABLE;
     }
 
     return statusRequest;

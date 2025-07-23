@@ -5,9 +5,6 @@ export const followupStatusRequestFlow: Record<
   StatusFollowupAdoptedAnimal[]
 > = {
   [StatusFollowupAdoptedAnimal.SCHEDULED_FOLLOUP]: [
-    StatusFollowupAdoptedAnimal.IN_FOLLOWUP,
-  ],
-  [StatusFollowupAdoptedAnimal.IN_FOLLOWUP]: [
     StatusFollowupAdoptedAnimal.SCHEDULED_FOLLOUP,
     StatusFollowupAdoptedAnimal.SCHEDULED_STERILIZATION,
     StatusFollowupAdoptedAnimal.VERIFIED,
@@ -15,7 +12,7 @@ export const followupStatusRequestFlow: Record<
   ],
   [StatusFollowupAdoptedAnimal.SCHEDULED_STERILIZATION]: [
     StatusFollowupAdoptedAnimal.VERIFIED,
-    StatusFollowupAdoptedAnimal.IN_FOLLOWUP,
+    StatusFollowupAdoptedAnimal.SCHEDULED_FOLLOUP,
   ],
   [StatusFollowupAdoptedAnimal.VERIFIED]: [
     StatusFollowupAdoptedAnimal.VERIFIED,

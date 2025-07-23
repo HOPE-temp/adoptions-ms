@@ -11,6 +11,8 @@ import {
   UseGuards,
   Query,
   Req,
+  ParseIntPipe,
+  Put,
 } from '@nestjs/common';
 import { AdoptionsService } from '../services/adoptions.service';
 
@@ -28,8 +30,12 @@ import {
 } from '../dto/create-adoption.dto';
 import {
   UpdateAdoptionEvaluateDto,
+  UpdateAdoptionRequestDto,
+  UpdateAdoptionResultDto,
   UpdateCompleteRequestAdoption,
   UpdateLinkAnimalWithAdoption,
+  UpdateLinkSupervisor,
+  UpdateTemporalAdoptionrDto,
 } from '../dto/update-adoption.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -42,20 +48,6 @@ export class AdoptionsController {
   @ApiOperation({ summary: 'Register an adoption' })
   create(@Body() createAdoptionDto: CreateAdoptionDto) {
     return this.adoptionsService.create(createAdoptionDto);
-  }
-
-  @Roles(RoleUser.ADMIN, RoleUser.VOLUNTEER)
-  @Post('/with_result')
-  @ApiOperation({
-    summary: 'Register an adoption with a review - statusResult',
-  })
-  createWithResult(
-    @Body() createAdoptionDto: CreateWithReviewAdoptionDto,
-    @Req() req: Request,
-  ) {
-    const { sub } = req.user as PayloadToken;
-
-    return this.adoptionsService.createWithResult(sub, createAdoptionDto);
   }
 
   @Roles(RoleUser.ADMIN, RoleUser.VOLUNTEER)
@@ -73,6 +65,57 @@ export class AdoptionsController {
   }
 
   @Roles(RoleUser.ADMIN, RoleUser.VOLUNTEER)
+  @Get(':id/status')
+  @ApiOperation({ summary: 'Get all adoption with filter' })
+  findEstadoAdopcionOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.adoptionsService.findConsultStatusAdoption(id);
+  }
+
+  @Roles(RoleUser.ADMIN, RoleUser.VOLUNTEER)
+  @Put('/:id/update_status_result')
+  actualizarEstadoEvaluación(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateAdoptionDto: UpdateAdoptionResultDto,
+  ) {
+    return this.adoptionsService.updateResultAdoption(id, updateAdoptionDto);
+  }
+
+  @Roles(RoleUser.ADMIN, RoleUser.VOLUNTEER)
+  @Put('/:id/update_status_request')
+  actualizarEstadoPeticion(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateAdoptionDto: UpdateAdoptionRequestDto,
+  ) {
+    return this.adoptionsService.updateRequestAdoption(id, updateAdoptionDto);
+  }
+
+  @Put(':id/temp-assign')
+  registrarAnimalTemporal(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('animalId') animalId: number,
+  ) {
+    return this.adoptionsService.updateTeporal(id, animalId);
+  }
+
+  @Roles(RoleUser.ADMIN, RoleUser.VOLUNTEER)
+  @Put(':id/link_volunteer_supervisor')
+  asociarVoluntarioSupervisor(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateAdoptionDto: UpdateLinkSupervisor,
+  ) {
+    return this.adoptionsService.linkVolunteerSupervisor(id, updateAdoptionDto);
+  }
+
+  @Roles(RoleUser.ADMIN, RoleUser.VOLUNTEER)
+  @Put(':id/register_animal_adoption')
+  registrarAnimalAdopcion(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('idAnimal', ParseIntPipe) idAnimal: number,
+  ) {
+    return this.adoptionsService.linkAnimalWithAdoption(id, idAnimal);
+  }
+
+  @Roles(RoleUser.ADMIN, RoleUser.VOLUNTEER)
   @Patch(':id/evaluate_request_adoption')
   evaluateRequestAdoption(
     @Param('id', ParseUUIDPipe) id: string,
@@ -85,15 +128,6 @@ export class AdoptionsController {
       sub,
       updateAdoptionEvaluateDto,
     );
-  }
-
-  @Roles(RoleUser.ADMIN, RoleUser.VOLUNTEER)
-  @Patch(':id/linked_animal_with_adoption')
-  linkAnimalWithAdoption(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateAdoptionDto: UpdateLinkAnimalWithAdoption,
-  ) {
-    return this.adoptionsService.linkAnimalWithAdoption(id, updateAdoptionDto);
   }
 
   @Roles(RoleUser.ADMIN, RoleUser.VOLUNTEER)

@@ -1,11 +1,11 @@
-export enum StatusResultApotion {
+export enum StatusResultAdoption {
   NOT_EVALUATED = 'not_evaluated',
   APPROVED = 'approved',
   REJECTED = 'rejected',
   BANNED = 'banned',
 }
 
-export enum StatusRequestApotion {
+export enum StatusRequestAdoption {
   CREATED = 'created',
   SUITABLE = 'suitable',
   SELECTED_ANIMAL = 'selected_animal',
@@ -13,7 +13,7 @@ export enum StatusRequestApotion {
   ADOPTION_COMPLETED = 'adoption_completed',
 }
 
-export enum StatusSterilisationApotion {
+export enum StatusSterilisationAdoption {
   sterilized = 'sterilized',
   follow_up_scheduled = 'follow_up_scheduled',
   in_follow_up = 'in_follow_up',

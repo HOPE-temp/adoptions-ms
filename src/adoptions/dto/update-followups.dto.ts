@@ -1,5 +1,6 @@
 import {
   IsDate,
+  IsEnum,
   IsString,
   IsUrl,
   MaxLength,
@@ -8,6 +9,12 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { IsAfter } from 'src/common/validators/is-after.validator';
+import { StatusFollowupAdoptedAnimal } from '../models/followup.status.model';
+
+export class UpdateStatusFollowup {
+  @IsEnum(StatusFollowupAdoptedAnimal)
+  statusFollowup: StatusFollowupAdoptedAnimal;
+}
 
 export class UpdateRescheduleFollowup {
   @IsString()

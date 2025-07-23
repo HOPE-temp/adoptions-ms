@@ -11,57 +11,39 @@ import {
 import { FollowupsService } from '../services/followups.service';
 import { FilterFollowupDto } from '../dto/filter-followups.dto';
 import { ApiOperation } from '@nestjs/swagger';
-import {
-  UpdateCheckupAdoption,
-  UpdateRescheduleFollowup,
-} from '../dto/update-followups.dto';
 import { PayloadToken } from 'src/auth/models/token.model';
 import { Request } from 'express';
+import { UpdateStatusFollowup } from '../dto/update-followups.dto';
 
 @Controller('followups')
 export class FollowupsController {
   constructor(private readonly followupService: FollowupsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Register an adoption' })
+  @ApiOperation({ summary: 'List adoptions' })
   findAll(@Query() params: FilterFollowupDto) {
     return this.followupService.findAll(params);
   }
   @Get(':id')
-  @ApiOperation({ summary: 'Register an adoption' })
+  @ApiOperation({ summary: 'Get a adoption' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.followupService.find(id);
   }
 
-  @Patch(':id/reschedule')
+  @Patch(':id/update_status_followup')
   @ApiOperation({ summary: 'Register an adoption' })
-  rescheduleFollowup(
+  updateStatusFollowup(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateFollowDto: UpdateRescheduleFollowup,
+    @Body() updateDtoFollowup: UpdateStatusFollowup,
   ) {
-    return this.followupService.rescheduleFollowup(id, updateFollowDto);
+    console.log('nueava');
+    return this.followupService.updateStatusFollwup(id, updateDtoFollowup);
   }
 
-  @Patch(':id/checkupSchedule')
-  @ApiOperation({ summary: 'Register an adoption' })
-  checkupFollowup(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateFollowDto: UpdateCheckupAdoption,
-  ) {
-    return this.followupService.checkupFollowup(id, updateFollowDto);
-  }
-
-  @Patch(':id/checkupSchedule')
+  @Patch(':id/checkup_schedule')
   @ApiOperation({ summary: 'Register an adoption' })
   validateSterelization(@Param('id', ParseUUIDPipe) id: string) {
     return this.followupService.validateSterelization(id);
-  }
-
-  @Patch(':id/start')
-  @ApiOperation({ summary: 'Register an adoption' })
-  initFollowup(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
-    const { sub } = req.user as PayloadToken;
-    return this.followupService.initFollowup(id, sub);
   }
 
   @Patch(':id/cancel')

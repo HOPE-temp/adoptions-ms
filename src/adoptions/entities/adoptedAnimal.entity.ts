@@ -1,3 +1,5 @@
+import 'reflect-metadata';
+
 import {
   Column,
   CreateDateColumn,
@@ -26,11 +28,11 @@ export class AdoptedAnimal {
     name: 'animal_id',
     nullable: false
   })
-  animals: number;
+  animal: number;
 
   @ManyToOne(() => Adoption, (adoption) => adoption.adoptedAnimals)
   @JoinColumn({ name: 'adoption_id' })
-  adoptions: Adoption;
+  adoption: Adoption;
 
   @Column({
     name: 'status_followup',

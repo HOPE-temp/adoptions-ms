@@ -1,34 +1,22 @@
-import {
-  IsArray,
-  IsIn,
-  IsInt,
-  IsNotEmpty,
-  IsString,
-  MinLength,
-} from 'class-validator';
-import { StatusResultApotion } from '../models/adoption.status.model';
+import { IsIn, IsInt, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { StatusResultAdoption } from '../models/adoption.status.model';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateAdoptionDto {
   @IsInt()
   @IsNotEmpty()
-  readonly adopterId: number;
-
-  @IsArray()
-  @IsNotEmpty()
-  @ApiProperty({ description: 'Id of animal selected' })
-  readonly animalsIds: string[];
+  readonly adopter: number;
 }
 
 export class CreateWithReviewAdoptionDto extends CreateAdoptionDto {
   @IsIn([
-    StatusResultApotion.APPROVED,
-    StatusResultApotion.BANNED,
-    StatusResultApotion.REJECTED,
+    StatusResultAdoption.APPROVED,
+    StatusResultAdoption.BANNED,
+    StatusResultAdoption.REJECTED,
   ])
   @IsNotEmpty()
   @ApiProperty({ description: 'Status result of review request adoption' })
-  readonly statusResult: StatusResultApotion;
+  readonly statusResult: StatusResultAdoption;
 
   @IsString()
   @IsNotEmpty()

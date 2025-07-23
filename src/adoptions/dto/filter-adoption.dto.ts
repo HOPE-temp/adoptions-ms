@@ -1,7 +1,7 @@
 import { IsEnum, IsOptional, IsPositive } from 'class-validator';
 import {
-  StatusRequestApotion,
-  StatusResultApotion,
+  StatusRequestAdoption,
+  StatusResultAdoption,
 } from '../models/adoption.status.model';
 import { ApiProperty } from '@nestjs/swagger';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
@@ -13,18 +13,13 @@ export class FilterAdoptionDto extends PaginationDto {
   @ApiProperty({ description: 'Adopter Id that created request' })
   idAdopter: number;
 
-  @IsEnum(StatusRequestApotion)
+  @IsEnum(StatusRequestAdoption)
   @IsOptional()
   @ApiProperty({ description: 'Adopter status request' })
-  statusRequest: StatusRequestApotion;
+  statusRequest: StatusRequestAdoption;
 
-  @IsEnum(StatusResultApotion)
+  @IsEnum(StatusResultAdoption)
   @IsOptional()
   @ApiProperty({ description: 'Adopter status result' })
-  statusResult: StatusResultApotion;
-
-  @IsOptional()
-  @IsPeruvianDocument()
-  @ApiProperty({ description: 'Adopter DNI' })
-  documentNumber: string;
+  statusResult: StatusResultAdoption;
 }

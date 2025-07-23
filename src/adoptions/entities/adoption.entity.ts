@@ -3,17 +3,13 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  JoinColumn,
-  JoinTable,
-  ManyToMany,
-  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import {
-  StatusRequestApotion,
-  StatusResultApotion,
+  StatusRequestAdoption,
+  StatusResultAdoption,
 } from '../models/adoption.status.model';
 import { AdoptedAnimal } from './adoptedAnimal.entity';
 import { IsOptional } from 'class-validator';
@@ -27,40 +23,41 @@ export class Adoption {
   @Column({
     name: 'adopter_id',
     type: 'uuid',
-    nullable: false
+    nullable: false,
   })
-  adopter: string;
+  adopter: number;
 
   @Column({
     name: 'evaluated_by_id',
-    nullable: false
+    nullable: false,
   })
   evaluator: number;
 
-  @OneToMany(() => AdoptedAnimal, (adoptedAnimal) => adoptedAnimal.adoptions)
+  @OneToMany(() => AdoptedAnimal, (adoptedAnimal) => adoptedAnimal.adoption)
   @IsOptional()
-  adoptedAnimals: AdoptedAnimal[];
+  adoptedAnimals?: AdoptedAnimal[];
 
-  @OneToMany(() => SelectedAnimalTemp, (animal) => animal.adoptionId)
-  animalsTemp: SelectedAnimalTemp[];
+  @OneToMany(() => SelectedAnimalTemp, (animal) => animal.adoption)
+  @IsOptional()
+  animalsTemp?: SelectedAnimalTemp[];
 
   @Column({
     name: 'status_result',
     type: 'enum',
-    enum: StatusResultApotion,
-    default: StatusResultApotion.NOT_EVALUATED,
+    enum: StatusResultAdoption,
+    default: StatusResultAdoption.NOT_EVALUATED,
     nullable: false,
   })
-  statusResult: StatusResultApotion;
+  statusResult: StatusResultAdoption;
 
   @Column({
     name: 'status_request',
     type: 'enum',
-    enum: StatusRequestApotion,
-    default: StatusRequestApotion.CREATED,
+    enum: StatusRequestAdoption,
+    default: StatusRequestAdoption.CREATED,
     nullable: false,
   })
-  statusRequest: StatusRequestApotion;
+  statusRequest: StatusRequestAdoption;
 
   @Column({
     name: 'review_request_notes',

@@ -1,39 +1,40 @@
 import {
-  StatusRequestApotion,
-  StatusResultApotion,
+  StatusRequestAdoption,
+  StatusResultAdoption,
 } from '../models/adoption.status.model';
 
 export const adoptionStatusRequestFlow: Record<
-  StatusRequestApotion,
-  StatusRequestApotion[]
+  StatusRequestAdoption,
+  StatusRequestAdoption[]
 > = {
-  [StatusRequestApotion.CREATED]: [
-    StatusRequestApotion.SUITABLE,
-    StatusRequestApotion.CANCELLED,
+  [StatusRequestAdoption.CREATED]: [
+    StatusRequestAdoption.SUITABLE,
+    StatusRequestAdoption.CANCELLED,
   ],
-  [StatusRequestApotion.SUITABLE]: [
-    StatusRequestApotion.SELECTED_ANIMAL,
-    StatusRequestApotion.CANCELLED,
+  [StatusRequestAdoption.SUITABLE]: [
+    StatusRequestAdoption.SELECTED_ANIMAL,
+    StatusRequestAdoption.CANCELLED,
   ],
-  [StatusRequestApotion.SELECTED_ANIMAL]: [
-    StatusRequestApotion.ADOPTION_COMPLETED,
+  [StatusRequestAdoption.SELECTED_ANIMAL]: [
+    StatusRequestAdoption.SELECTED_ANIMAL,
+    StatusRequestAdoption.ADOPTION_COMPLETED,
   ],
-  [StatusRequestApotion.ADOPTION_COMPLETED]: [
-    StatusRequestApotion.ADOPTION_COMPLETED,
+  [StatusRequestAdoption.ADOPTION_COMPLETED]: [
+    StatusRequestAdoption.ADOPTION_COMPLETED,
   ],
-  [StatusRequestApotion.CANCELLED]: [StatusRequestApotion.CANCELLED],
+  [StatusRequestAdoption.CANCELLED]: [StatusRequestAdoption.CANCELLED],
 };
 
 export const adoptionStatusResultFlow: Record<
-  StatusResultApotion,
-  StatusResultApotion[]
+  StatusResultAdoption,
+  StatusResultAdoption[]
 > = {
-  [StatusResultApotion.NOT_EVALUATED]: [
-    StatusResultApotion.APPROVED,
-    StatusResultApotion.REJECTED,
-    StatusResultApotion.NOT_EVALUATED,
+  [StatusResultAdoption.NOT_EVALUATED]: [
+    StatusResultAdoption.APPROVED,
+    StatusResultAdoption.REJECTED,
+    StatusResultAdoption.NOT_EVALUATED,
   ],
-  [StatusResultApotion.APPROVED]: [StatusResultApotion.APPROVED],
-  [StatusResultApotion.REJECTED]: [StatusResultApotion.REJECTED],
-  [StatusResultApotion.BANNED]: [StatusResultApotion.BANNED],
+  [StatusResultAdoption.APPROVED]: [StatusResultAdoption.APPROVED],
+  [StatusResultAdoption.REJECTED]: [StatusResultAdoption.REJECTED],
+  [StatusResultAdoption.BANNED]: [StatusResultAdoption.BANNED],
 };

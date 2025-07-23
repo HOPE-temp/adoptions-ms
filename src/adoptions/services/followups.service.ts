@@ -7,25 +7,20 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { FilterFollowupDto } from '../dto/filter-followups.dto';
 import { AdoptedAnimal } from '../entities/adoptedAnimal.entity';
 import { FindManyOptions, FindOptionsWhere, Repository } from 'typeorm';
-import { ActivitiesService } from 'src/activities/services/activities.service';
 import {
   UpdateCheckupAdoption,
   UpdateRescheduleFollowup,
+  UpdateStatusFollowup,
 } from '../dto/update-followups.dto';
 import { validateStatusFlow } from 'src/common/utils/statusFlow.util';
 import { followupStatusRequestFlow } from '../flows/followup.flow';
 import { StatusFollowupAdoptedAnimal } from '../models/followup.status.model';
-import { MedicalCheckupService } from 'src/medical-checkups/services/medical-checkups.service';
-import { UsersService } from 'src/users/services/users.service';
 
 @Injectable()
 export class FollowupsService {
   constructor(
     @InjectRepository(AdoptedAnimal)
     private readonly adoptedAnimalRepo: Repository<AdoptedAnimal>,
-    private userService: UsersService,
-    private readonly activitiesService: ActivitiesService,
-    private readonly medicalCheckupService: MedicalCheckupService,
   ) {}
 
   findAll(params?: FilterFollowupDto) {
@@ -59,7 +54,7 @@ export class FollowupsService {
 
   async find(id: string) {
     const followup = await this.adoptedAnimalRepo.findOne({
-      relations: ['activities', 'supervisor', 'adoption'],
+      relations: ['adoption'],
       where: { id },
     });
 
@@ -68,40 +63,13 @@ export class FollowupsService {
     }
     return followup;
   }
-
-  async rescheduleFollowup(
+  async updateStatusFollwup(
     id: string,
-    updateFollowDto: UpdateRescheduleFollowup,
+    updateDtoFollowup: UpdateStatusFollowup,
   ) {
     const adoptedAnimal = await this.find(id);
-
-    const activity = {
-      title: `Seguimineto Post-adoption ${updateFollowDto.animalName}`,
-      resourceUrl: updateFollowDto.resourceUrl,
-      scheduleStartAt: updateFollowDto.scheduleStartAt,
-    };
-
-    this.activitiesService.create(activity, adoptedAnimal);
-
-    this.updateStatusRequest(
-      adoptedAnimal,
-      StatusFollowupAdoptedAnimal.SCHEDULED_FOLLOUP,
-    );
-    return this.adoptedAnimalRepo.save(adoptedAnimal);
-  }
-
-  async checkupFollowup(id: string, updateFollowDto: UpdateCheckupAdoption) {
-    const adoptedAnimal = await this.find(id);
-
-    this.medicalCheckupService.create({
-      ...updateFollowDto,
-      animalId: adoptedAnimal.animals.id,
-    });
-
-    this.updateStatusRequest(
-      adoptedAnimal,
-      StatusFollowupAdoptedAnimal.SCHEDULED_STERILIZATION,
-    );
+    console.log('folloeasdasdas');
+    this.updateStatusRequest(adoptedAnimal, updateDtoFollowup.statusFollowup);
 
     return this.adoptedAnimalRepo.save(adoptedAnimal);
   }
@@ -113,20 +81,6 @@ export class FollowupsService {
       adoptedAnimal,
       StatusFollowupAdoptedAnimal.VERIFIED,
     );
-
-    return this.adoptedAnimalRepo.save(adoptedAnimal);
-  }
-
-  async initFollowup(id: string, idSupervisor: number) {
-    const adoptedAnimal = await this.find(id);
-    const supervisor = await this.userService.findOne(idSupervisor);
-
-    this.updateStatusRequest(
-      adoptedAnimal,
-      StatusFollowupAdoptedAnimal.IN_FOLLOWUP,
-    );
-
-    this.adoptedAnimalRepo.merge(adoptedAnimal, { supervisor });
 
     return this.adoptedAnimalRepo.save(adoptedAnimal);
   }
@@ -144,18 +98,22 @@ export class FollowupsService {
 
   private updateStatusRequest(
     adoptedAnimal: AdoptedAnimal,
-    statusRequest: StatusFollowupAdoptedAnimal,
+    statusFollowup: StatusFollowupAdoptedAnimal,
   ) {
+    console.log({ statusFollowup });
     if (
       !validateStatusFlow(
         adoptedAnimal.statusFollowup,
-        statusRequest,
+        statusFollowup,
         followupStatusRequestFlow,
       )
     ) {
       throw new ConflictException(
-        `new status is not validate: ${adoptedAnimal.statusFollowup} -> ${statusRequest}`,
+        `new status is not validate: ${adoptedAnimal.statusFollowup} -> ${statusFollowup}`,
       );
     }
+
+    this.adoptedAnimalRepo.merge(adoptedAnimal, { statusFollowup });
+    return adoptedAnimal;
   }
 }
